@@ -1,0 +1,233 @@
+# Enter your network definition here.
+# Use Shift+Enter to update the visualization.
+name: "PNet"
+
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data12"
+  top: "label12"
+  include {
+   phase: TRAIN
+  }
+  hdf5_data_param {
+    source: "/home/xxzeng/kp_model_caffe/caffe/trainV1/creatdata.PNet/WIDER07/data12-1/train-12rgb.txt" #change to yourself
+    batch_size: 1820 #change to yourself
+  }
+}
+layer {
+  name: "data"
+  type: "HDF5Data"
+  top: "data12"
+  top: "label12"
+  include {
+   phase: TEST
+  }
+  hdf5_data_param {
+    source: "/home/xxzeng/kp_model_caffe/caffe/trainV1/creatdata.PNet/WIDER07/data12-1/train-12rgb.txt" #change to yourself
+    batch_size: 2500 #change to yourself
+  }
+}
+layer {
+  name: "split"
+  type: "Slice"
+  bottom:"label12"
+  top: "binary_cf2"
+  top:"regression4"
+  slice_param {
+  	slice_point:1 #there are five numbers, the first for classification, the next four for regression
+	  slice_dim: 1
+
+  }
+}
+
+layer {
+  name: "conv1"
+  type: "Convolution"
+  bottom: "data12"
+  top: "conv1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 10
+    kernel_size: 3
+    stride: 1
+     weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "prelu1"
+  type: "PReLU"
+  bottom: "conv1"
+  top: "conv1"
+}
+layer {
+  name: "pool1"
+  type: "Pooling"
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+}
+
+layer {
+  name: "conv2-new"
+  type: "Convolution"
+  bottom: "pool1"
+  top: "conv2-new"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 16
+    kernel_size: 3
+    stride: 1
+     weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "prelu2-new"
+  type: "PReLU"
+  bottom: "conv2-new"
+  top: "conv2-new"
+}
+
+layer {
+  name: "conv3-new"
+  type: "Convolution"
+  bottom: "conv2-new"
+  top: "conv3-new"
+  param {
+    lr_mult: 5
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 10
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 32
+    kernel_size: 3
+    stride: 1
+     weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+	  type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "prelu3-new"
+  type: "PReLU"
+  bottom: "conv3-new"
+  top: "conv3-new"
+}
+
+
+
+layer {
+  name: "conv4-new"
+  type: "Convolution"
+  bottom: "conv3-new"
+  top: "conv4-new"
+  param {
+    lr_mult: 10
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 20
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 2
+    kernel_size: 1
+    stride: 1
+     weight_filler {
+      type: "xavier"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "conv4-2-new"
+  type: "Convolution"
+  bottom: "conv3-new"
+  top: "conv4-2-new"
+  param {
+    lr_mult: 10
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 20
+    decay_mult: 1
+  }
+  convolution_param {
+    num_output: 4
+    kernel_size: 1
+    stride: 1
+     weight_filler {
+      type: "xavier"
+	}
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "loss_softmax"
+  type: "SoftmaxWithLoss"
+  bottom: "conv4-new"
+  bottom: "binary_cf2"
+  top: "loss_softmax"
+  loss_param {
+	ignore_label: 2
+	}  
+}
+layer {
+  name: "accuracy_cf2"
+  type: "Accuracy"
+  bottom: "conv4-new"
+  bottom: "binary_cf2"  
+  top:"accuracy_cf2"
+  include: { phase: TEST }
+}
+layer {
+  name: "loss_euclidean"
+  type: "EuclideanLoss"
+  bottom: "conv4-2-new"
+  bottom: "regression4"
+  top: "loss_euclidean"
+}
+
